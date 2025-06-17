@@ -1,1 +1,1 @@
-console.log("Checklist App Loaded");
+console.log('Script Loaded');
