@@ -412,7 +412,7 @@ margin-left: 32px;
 /* Last tag covers anything over one higher than the previous max-size cap. */
 @media (min-width: 1201px) { body {background-image:url(\/\/themes.googleusercontent.com\/image?id=1KH22PlFqsiVYxboQNAoJjYmRbw5M4REHmdJbHT5M2x9zVMGrCqwSjZvaQW_A10KPc6Il&options=w1600);}}
   </style>
-<link href='https://www.blogger.com/dyn-css/authorization.css?targetBlogID=7134852494570757091&amp;zx=c12b3d2a-f1be-4945-bcfd-7d4bfac91025' media='none' onload='if(media!=&#39;all&#39;)media=&#39;all&#39;' rel='stylesheet'/><noscript><link href='https://www.blogger.com/dyn-css/authorization.css?targetBlogID=7134852494570757091&amp;zx=c12b3d2a-f1be-4945-bcfd-7d4bfac91025' rel='stylesheet'/></noscript>
+<link href='https://www.blogger.com/dyn-css/authorization.css?targetBlogID=7134852494570757091&amp;zx=395432c4-018a-47c3-b212-0d964b792a88' media='none' onload='if(media!=&#39;all&#39;)media=&#39;all&#39;' rel='stylesheet'/><noscript><link href='https://www.blogger.com/dyn-css/authorization.css?targetBlogID=7134852494570757091&amp;zx=395432c4-018a-47c3-b212-0d964b792a88' rel='stylesheet'/></noscript>
 <meta name='google-adsense-platform-account' content='ca-host-pub-1556223355139109'/>
 <meta name='google-adsense-platform-domain' content='blogspot.com'/>
 
@@ -5643,52 +5643,67 @@ setInterval(() => {
 </div><div class='widget HTML' data-version='1' id='HTML3'>
 <div class='widget-content'>
 <div>
-  <h3>Checklist Server Setup</h3>
-  <button onclick="setupServer()">Setup GitHub Server</button>
-  <button id="accessBtn" style="display:none;" onclick="accessServer()">Access Server</button>
-  <iframe id="iframe" style="display:none;width:100%;height:600px;margin-top:10px;border:1px solid #ccc;"></iframe>
+  <h3>Peer Sync Setup</h3>
+  <button onclick="setupServer()">Setup Peer Sync via GitHub</button>
+
+  <select id="repoSelect" style="display:none; margin-left: 10px;"></select>
+  <button id="accessBtn" style="display:none;" onclick="accessServer()">Access Peer Sync</button>
+</div>
+
+<!-- Fullscreen Popup -->
+<div id="popup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:9999;">
+  <button onclick="closePopup()" style="position:absolute;top:10px;right:10px;z-index:10000;font-size:18px;">&#10006; Close</button>
+  <iframe id="iframe" style="width:100%;height:100%;border:none;"></iframe>
 </div>
 
 <script>
-  // Run on page load
+  const LS_KEY = "peerSyncRepos";
+
   window.onload = function () {
-    const storedRepo = localStorage.getItem("repo");
-    const storedUser = localStorage.getItem("username");
-
-    if (storedRepo && storedUser) {
-      const accessBtn = document.getElementById("accessBtn");
-      accessBtn.dataset.url = `https://${storedUser}.github.io/${storedRepo}`;
-      accessBtn.style.display = "inline-block";
-
-      // Start pinging every 5 minutes to keep the page alive
-      setInterval(() => {
-        fetch(accessBtn.dataset.url + "/index.html")
-          .then(res => console.log("Ping success at", new Date().toLocaleTimeString()))
-          .catch(err => console.warn("Ping failed:", err));
-      }, 5 * 60 * 1000); // 5 minutes
-    }
+    loadRepoDropdown();
   };
 
+  function loadRepoDropdown() {
+    const repoList = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+    const repoSelect = document.getElementById("repoSelect");
+    const accessBtn = document.getElementById("accessBtn");
+
+    if (repoList.length === 0) return;
+
+    repoSelect.innerHTML = ""; // Clear previous
+    repoList.forEach((entry, i) => {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = `${entry.username}/${entry.repo}`;
+      repoSelect.appendChild(option);
+    });
+
+    repoSelect.style.display = "inline-block";
+    accessBtn.style.display = "inline-block";
+
+    // Set URL on first option
+    accessBtn.dataset.url = `https://${repoList[0].username}.github.io/${repoList[0].repo}`;
+
+    repoSelect.onchange = () => {
+      const selected = repoList[repoSelect.value];
+      accessBtn.dataset.url = `https://${selected.username}.github.io/${selected.repo}`;
+    };
+  }
+
   function setupServer() {
-    var repoUrl = prompt("Enter GitHub Repo URL (e.g. https://github.com/username/repo)");
-    var token = prompt("Enter your GitHub Personal Access Token");
+    const repoUrl = prompt("Enter GitHub Repo URL (e.g. https://github.com/username/repo)");
+    const token = prompt("Enter your GitHub Personal Access Token");
 
     if (!repoUrl || !token) {
       alert("Missing repo URL or token.");
       return;
     }
 
-    var parts = repoUrl.replace("https://github.com/", "").split("/");
-    var username = parts[0];
-    var repo = parts[1];
-
-    // Save to localStorage
-    localStorage.setItem("username", username);
-    localStorage.setItem("repo", repo);
-    localStorage.setItem("token", token);
-
-    var apiBase = `https://api.github.com/repos/${username}/${repo}/contents/`;
-    var headers = {
+    const parts = repoUrl.replace("https://github.com/", "").split("/");
+    const username = parts[0];
+    const repo = parts[1];
+    const apiBase = `https://api.github.com/repos/${username}/${repo}/contents/`;
+    const headers = {
       "Authorization": "token " + token,
       "Content-Type": "application/json"
     };
@@ -5699,13 +5714,12 @@ setInterval(() => {
         return response.text();
       })
       .then(bloggerHTML => {
-        var fileUrl = apiBase + "index.html";
+        const fileUrl = apiBase + "index.html";
 
-        // Check if index.html already exists
-        fetch(fileUrl, { method: "GET", headers: headers })
+        return fetch(fileUrl, { method: "GET", headers: headers })
           .then(res => (res.status === 200 ? res.json() : null))
           .then(existing => {
-            var body = {
+            const body = {
               message: "Upload index.html",
               content: btoa(unescape(encodeURIComponent(bloggerHTML)))
             };
@@ -5716,33 +5730,42 @@ setInterval(() => {
               headers: headers,
               body: JSON.stringify(body)
             });
-          })
-          .then(res => {
-            if (!res.ok) return res.json().then(err => Promise.reject(err));
-            return res.json();
-          })
-          .then(() => {
-            alert("Website uploaded successfully!");
-            var accessBtn = document.getElementById("accessBtn");
-            accessBtn.dataset.url = `https://${username}.github.io/${repo}`;
-            accessBtn.style.display = "inline-block";
-          })
-          .catch(err => {
-            console.error("Upload error:", err);
-            alert("Upload failed: " + (err.message || JSON.stringify(err)));
           });
       })
+      .then(() => {
+        alert("Website uploaded successfully!");
+
+        const repoList = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+
+        // Avoid duplicate entries
+        const exists = repoList.some(item => item.username === username && item.repo === repo);
+        if (!exists) {
+          repoList.push({ username, repo, token });
+          localStorage.setItem(LS_KEY, JSON.stringify(repoList));
+        }
+
+        loadRepoDropdown();
+      })
       .catch(err => {
-        console.error("Error fetching Blogger content:", err);
-        alert("Failed to fetch content from Blogger: " + err.message);
+        console.error("Setup error:", err);
+        alert("Setup failed: " + (err.message || JSON.stringify(err)));
       });
   }
 
   function accessServer() {
-    var url = document.getElementById("accessBtn").dataset.url + "/index.html";
-    var iframe = document.getElementById("iframe");
+    const url = document.getElementById("accessBtn").dataset.url + "/index.html";
+    const iframe = document.getElementById("iframe");
+    const popup = document.getElementById("popup");
+
     iframe.src = url;
-    iframe.style.display = "block";
+    popup.style.display = "block";
+  }
+
+  function closePopup() {
+    const popup = document.getElementById("popup");
+    const iframe = document.getElementById("iframe");
+    iframe.src = "";
+    popup.style.display = "none";
   }
 </script>
 </div>
@@ -6263,7 +6286,7 @@ Simple theme. Theme images by <a href='https://www.istockphoto.com/googleimages.
 
 <script type="text/javascript" src="https://www.blogger.com/static/v1/widgets/2838643729-widgets.js"></script>
 <script type='text/javascript'>
-window['__wavt'] = 'AOuZoY7GER0W-aTzXb1iKBZUwkW_ml6QKQ:1750143941305';_WidgetManager._Init('//www.blogger.com/rearrange?blogID\x3d7134852494570757091','//testtesting10101010.blogspot.com/','7134852494570757091');
+window['__wavt'] = 'AOuZoY43BnYD01HeqvVfKLNqQmh4kApkwQ:1750145236116';_WidgetManager._Init('//www.blogger.com/rearrange?blogID\x3d7134852494570757091','//testtesting10101010.blogspot.com/','7134852494570757091');
 _WidgetManager._SetDataContext([{'name': 'blog', 'data': {'blogId': '7134852494570757091', 'title': 'test', 'url': 'https://testtesting10101010.blogspot.com/', 'canonicalUrl': 'https://testtesting10101010.blogspot.com/', 'homepageUrl': 'https://testtesting10101010.blogspot.com/', 'searchUrl': 'https://testtesting10101010.blogspot.com/search', 'canonicalHomepageUrl': 'https://testtesting10101010.blogspot.com/', 'blogspotFaviconUrl': 'https://testtesting10101010.blogspot.com/favicon.ico', 'bloggerUrl': 'https://www.blogger.com', 'hasCustomDomain': false, 'httpsEnabled': true, 'enabledCommentProfileImages': true, 'gPlusViewType': 'FILTERED_POSTMOD', 'adultContent': false, 'analyticsAccountNumber': '', 'encoding': 'UTF-8', 'locale': 'en-GB', 'localeUnderscoreDelimited': 'en_gb', 'languageDirection': 'ltr', 'isPrivate': false, 'isMobile': false, 'isMobileRequest': false, 'mobileClass': '', 'isPrivateBlog': false, 'isDynamicViewsAvailable': true, 'feedLinks': '\x3clink rel\x3d\x22alternate\x22 type\x3d\x22application/atom+xml\x22 title\x3d\x22test - Atom\x22 href\x3d\x22https://testtesting10101010.blogspot.com/feeds/posts/default\x22 /\x3e\n\x3clink rel\x3d\x22alternate\x22 type\x3d\x22application/rss+xml\x22 title\x3d\x22test - RSS\x22 href\x3d\x22https://testtesting10101010.blogspot.com/feeds/posts/default?alt\x3drss\x22 /\x3e\n\x3clink rel\x3d\x22service.post\x22 type\x3d\x22application/atom+xml\x22 title\x3d\x22test - Atom\x22 href\x3d\x22https://www.blogger.com/feeds/7134852494570757091/posts/default\x22 /\x3e\n', 'meTag': '', 'adsenseHostId': 'ca-host-pub-1556223355139109', 'adsenseHasAds': false, 'adsenseAutoAds': false, 'boqCommentIframeForm': true, 'loginRedirectParam': '', 'view': '', 'dynamicViewsCommentsSrc': '//www.blogblog.com/dynamicviews/4224c15c4e7c9321/js/comments.js', 'dynamicViewsScriptSrc': '//www.blogblog.com/dynamicviews/a332d1916da3fccd', 'plusOneApiSrc': 'https://apis.google.com/js/platform.js', 'disableGComments': true, 'interstitialAccepted': false, 'sharing': {'platforms': [{'name': 'Get link', 'key': 'link', 'shareMessage': 'Get link', 'target': ''}, {'name': 'Facebook', 'key': 'facebook', 'shareMessage': 'Share to Facebook', 'target': 'facebook'}, {'name': 'BlogThis!', 'key': 'blogThis', 'shareMessage': 'BlogThis!', 'target': 'blog'}, {'name': 'X', 'key': 'twitter', 'shareMessage': 'Share to X', 'target': 'twitter'}, {'name': 'Pinterest', 'key': 'pinterest', 'shareMessage': 'Share to Pinterest', 'target': 'pinterest'}, {'name': 'Email', 'key': 'email', 'shareMessage': 'Email', 'target': 'email'}], 'disableGooglePlus': true, 'googlePlusShareButtonWidth': 0, 'googlePlusBootstrap': '\x3cscript type\x3d\x22text/javascript\x22\x3ewindow.___gcfg \x3d {\x27lang\x27: \x27en_GB\x27};\x3c/script\x3e'}, 'hasCustomJumpLinkMessage': false, 'jumpLinkMessage': 'Read more', 'pageType': 'index', 'pageName': '', 'pageTitle': 'test'}}, {'name': 'features', 'data': {}}, {'name': 'messages', 'data': {'edit': 'Edit', 'linkCopiedToClipboard': 'Link copied to clipboard', 'ok': 'Ok', 'postLink': 'Post link'}}, {'name': 'template', 'data': {'name': 'Simple', 'localizedName': 'Simple', 'isResponsive': false, 'isAlternateRendering': false, 'isCustom': false, 'variant': 'literate', 'variantId': 'literate'}}, {'name': 'view', 'data': {'classic': {'name': 'classic', 'url': '?view\x3dclassic'}, 'flipcard': {'name': 'flipcard', 'url': '?view\x3dflipcard'}, 'magazine': {'name': 'magazine', 'url': '?view\x3dmagazine'}, 'mosaic': {'name': 'mosaic', 'url': '?view\x3dmosaic'}, 'sidebar': {'name': 'sidebar', 'url': '?view\x3dsidebar'}, 'snapshot': {'name': 'snapshot', 'url': '?view\x3dsnapshot'}, 'timeslide': {'name': 'timeslide', 'url': '?view\x3dtimeslide'}, 'isMobile': false, 'title': 'test', 'description': '', 'url': 'https://testtesting10101010.blogspot.com/', 'type': 'feed', 'isSingleItem': false, 'isMultipleItems': true, 'isError': false, 'isPage': false, 'isPost': false, 'isHomepage': true, 'isArchive': false, 'isLabelSearch': false}}]);
 _WidgetManager._RegisterWidget('_NavbarView', new _WidgetInfo('Navbar1', 'navbar', document.getElementById('Navbar1'), {}, 'displayModeFull'));
 _WidgetManager._RegisterWidget('_HeaderView', new _WidgetInfo('Header1', 'header', document.getElementById('Header1'), {}, 'displayModeFull'));
