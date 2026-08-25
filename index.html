@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHKKY — Your Daily Crypto Signal</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="site">
+    <div class="logo">CHK<span>KY</span></div>
+    <div class="streak-pill">🔥 <span id="streakCount">0</span> day streak</div>
+  </header>
+
+  <section class="hero">
+    <h1>Never miss a move.</h1>
+    <p>Free, AI double-confirmed crypto signals (MACD + RSI) across 33+ tokens. Ten seconds a day is all it takes.</p>
+  </section>
+
+  <section class="card">
+    <h2>Today's Signal</h2>
+    <p class="sub">Unlocks once every 24 hours. Come back daily to keep your streak alive.</p>
+
+    <div class="signal-cta">
+      <button id="revealBtn" class="btn btn-primary">Unlock Today's Signal</button>
+    </div>
+
+    <div id="signalResult" class="signal-result">
+      <div class="signal-head">
+        <div class="token" id="tokenName">—</div>
+        <div class="direction" id="tokenDirection">—</div>
+      </div>
+
+      <div class="confidence-row">
+        <div class="confidence-label">
+          <span>Dual-indicator confidence</span>
+          <span id="confidenceValue">0%</span>
+        </div>
+        <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill"></div></div>
+      </div>
+
+      <p class="signal-note" id="signalNote"></p>
+
+      <div class="badges">
+        <span class="badge" data-badge="3">3-day 🔥</span>
+        <span class="badge" data-badge="7">7-day ⚡</span>
+        <span class="badge" data-badge="30">30-day 💎</span>
+      </div>
+    </div>
+
+    <div id="notifNudge" class="notif-nudge">
+      <span>Turn on alerts so you never miss tomorrow's signal.</span>
+      <button id="notifBtn" class="btn btn-ghost">Enable</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Your Watchlist</h2>
+    <p class="sub">Pick the tokens you actually trade — your daily signal gets more useful the more you track.</p>
+    <div class="chip-grid" id="chipGrid"></div>
+    <div class="watchlist-status" id="watchlistStatus">0 tokens tracked</div>
+  </section>
+
+  <section class="card">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><h3>Get the daily nudge</h3><p>One alert a day — no spam, no noise.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><h3>Check your signal</h3><p>One token, one direction, one confidence score. Ten seconds.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><h3>Confirmed two ways</h3><p>Every call is cross-checked with MACD and RSI before it reaches you.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="disclaimer">Signals shown here are illustrative demo data for this preview page, not live market calls. Nothing on this page is financial advice — always do your own research before trading.</p>
+    <p>Get the full app on <a href="https://play.google.com/store/apps/details?id=com.chkky.dino" target="_blank" rel="noopener">Google Play</a></p>
+  </footer>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
