@@ -132,11 +132,15 @@ console.log('Script Loaded');
       return;
     }
     notifBtn.addEventListener('click', () => {
-      Notification.requestPermission().then((perm) => {
-        state.notif = perm;
-        saveState(state);
+      try {
+        Notification.requestPermission().then((perm) => {
+          state.notif = perm;
+          saveState(state);
+          notifNudge.classList.remove('show');
+        });
+      } catch (e) {
         notifNudge.classList.remove('show');
-      });
+      }
     });
   }
 
